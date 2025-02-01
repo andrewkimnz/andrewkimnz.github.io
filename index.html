@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Andrew Kim</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Raleway:wght@900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav id="navbar">
+    <ul>
+      <li><a href="#home">Home</a></li>
+      <li><a href="#about">About Me</a></li>
+      <li><a href="#timeline">Timeline</a></li>
+      <li><a href="#achievements">Achievements</a></li>
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#gallery">Gallery</a></li>
+    </ul>
+  </nav>
+
+  <!-- Home Section -->
+  <section id="home" class="home-section">
+    <div class="name-container">
+      <h1 class="name">Andrew Kim</h1>
+      <p class="tagline">Engineering Student @ UoA</p>
+    </div>
+  </section>
+
+<!-- About Section -->
+<section id="about" class="section">
+  <div class="about-container">
+    <!-- About Me Text -->
+    <div class="about-text hidden left">
+      <h2>About Me</h2>
+      <p>Hi, I'm Andrew Kim! I'm passionate about [your field or interests]. With a background in [your expertise], I strive to [your mission or goal].</p>
+    </div>
+    <!-- Photo Section -->
+    <div class="about-photo hidden right">
+      <img src="assets/images/your-photo.jpg" alt="Andrew Kim">
+    </div>
+  </div>
+</section>
+  
+  
+  <!-- Timeline Section -->
+  <section id="timeline" class="section">
+    <h2 class="hidden left">My Timeline</h2>
+    <div class="timeline">
+      <!-- Timeline Event 1 -->
+      <div class="timeline-event hidden left">
+        <div class="event-date">2000</div>
+        <div class="event-content">
+          <h3>Born in Seoul, South Korea</h3>
+          <p>I was born and raised in Seoul, where I developed a love for technology and innovation.</p>
+        </div>
+      </div>
+
+      <!-- Timeline Event 2 -->
+      <div class="timeline-event hidden right">
+        <div class="event-date">2015</div>
+        <div class="event-content">
+          <h3>Moved to New York</h3>
+          <p>My family and I moved to New York, where I started high school and discovered my passion for computer science.</p>
+        </div>
+      </div>
+
+      <!-- Timeline Event 3 -->
+      <div class="timeline-event hidden left">
+        <div class="event-date">2020</div>
+        <div class="event-content">
+          <h3>Graduated from MIT</h3>
+          <p>I graduated with a degree in Computer Science and started my career as a software engineer.</p>
+        </div>
+      </div>
+
+      <!-- Timeline Event 4 -->
+      <div class="timeline-event hidden right">
+        <div class="event-date">2023</div>
+        <div class="event-content">
+          <h3>Launched My First Startup</h3>
+          <p>I founded a tech startup focused on AI-driven solutions for small businesses.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Achievements Section -->
+  <section id="achievements" class="section">
+    <h2 class="hidden right">Achievements</h2>
+    <div class="achievement-item hidden left">
+      <h3>Award 1</h3>
+      <p>Description of your achievement.</p>
+    </div>
+    <div class="achievement-item hidden right">
+      <h3>Award 2</h3>
+      <p>Description of your achievement.</p>
+    </div>
+  </section>
+
+  <!-- Experience Section -->
+  <section id="experience" class="section">
+    <h2 class="hidden left">Experience</h2>
+    <div class="experience-item hidden right">
+      <h3>Job Title 1</h3>
+      <p>Company Name | Duration</p>
+      <p>Description of your role and accomplishments.</p>
+    </div>
+    <div class="experience-item hidden left">
+      <h3>Job Title 2</h3>
+      <p>Company Name | Duration</p>
+      <p>Description of your role and accomplishments.</p>
+    </div>
+  </section>
+
+<!-- Gallery Section -->
+<section id="gallery" class="section">
+  <h2 class="hidden left">Gallery</h2>
+  <div class="carousel">
+    <button class="carousel-button prev" aria-label="Previous Image">&#10094;</button>
+    <div class="carousel-container">
+      <div class="carousel-track">
+        <div class="carousel-slide">
+          <img src="assets/images/image1.jpg" alt="Image 1">
+          <p>Caption for Image 1</p>
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/images/image2.jpg" alt="Image 2">
+          <p>Caption for Image 2</p>
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/images/image3.jpg" alt="Image 3">
+          <p>Caption for Image 3</p>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-button next" aria-label="Next Image">&#10095;</button>
+  </div>
+  <!-- Indicator Circles -->
+  <div class="carousel-indicators">
+    <span class="indicator" data-index="0"></span>
+    <span class="indicator" data-index="1"></span>
+    <span class="indicator" data-index="2"></span>
+  </div>
+</section>
+    
+
+   <!-- Scroll-to-Top Button -->
+  <button id="scrollToTopBtn" class="hidden">
+    <span class="arrow">↑</span>
+  </button>
+
+
+<!-- Footer -->
+<footer>
+  <div class="footer-buttons">
+    <a href="mailto:=andrewsiwookim@gmail.com" class="footer-button">
+      <img src="assets/icons/email-icon.png" alt="Email">
+    </a>
+    <a href="https://github.com/andrewkimnz" target="_blank" class="footer-button">
+      <img src="assets/icons/github-icon.png" alt="GitHub">
+    </a>
+    <a href="https://linkedin.com/in/andrewkimnz" target="_blank" class="footer-button">
+      <img src="assets/icons/linkedin-icon.png" alt="LinkedIn">
+    </a>
+  </div>
+  <p>&copy; 2025 Andrew Kim.</p>
+</footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
