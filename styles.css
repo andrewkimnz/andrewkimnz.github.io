@@ -276,6 +276,7 @@ footer p {
   max-width: 800px;
   margin: 0 auto;
   padding: 40px 0;
+  margin-left: 230px;
 
 }
 
@@ -489,6 +490,8 @@ footer p {
   font-size: 5rem; /* Larger font size for the title */
   color: #6a11cb; /* Add a pop of color to the title */
   margin-bottom: 40px; /* Add space below the title */
+  margin-left: 75px;
+
 }
 
 /* Carousel Indicators */
@@ -519,8 +522,8 @@ footer p {
   color: #6a11cb; /* Add a pop of color to the title */
   margin-bottom: 40px; /* Add space below the title */
   padding: 0; /* Remove any padding */
-  margin-left: auto; /* Ensure no left margin */
-  margin-right: auto; /* Ensure no right margin */
+  margin-left: 80px;
+  
 }
 
 
@@ -541,6 +544,7 @@ html, body {
   margin: 0 auto; /* Center the carousel */
   padding: 0; /* Remove any padding */
   perspective: 1000px; /* Add perspective for 3D effect */
+margin-left: 225px;
 }
 
 /* Carousel Indicators */
@@ -549,6 +553,7 @@ html, body {
   justify-content: center; /* Center the indicators */
   margin-top: 20px;
   padding: 0; /* Remove any padding */
+  margin-left: 70px;
 }
 
 /* About Section */
@@ -620,4 +625,141 @@ html, body {
 .contact-button img {
   width: 24px; /* Icon size */
   height: 24px;
+}
+
+/* Mobile Styles Fixes */
+@media (max-width: 768px) {
+  /* Add Padding for Mobile Layout */
+  body {
+    padding: 0 50px;
+  }
+
+ 
+  /* Fix Navbar for Mobile */
+  #navbar {
+    width: calc(100% + 100px);
+    margin-left: -100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #navbar ul {
+    flex-direction: row;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  #navbar ul li {
+    margin: 10px 0;
+    text-align: center;
+  }
+  
+  
+  /* Adjust Home Section */
+  .home-section {
+    height: 60vh;
+    padding: 20px;
+    width: calc(100% + 100px);
+    margin-left: -70px;
+  }
+
+  .name {
+    font-size: 6rem;
+    letter-spacing: -1px;
+  }
+
+  .tagline {
+    font-size: 1.3rem;
+  }
+
+  /* Stack About Section Vertically */
+  .about-container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .about-photo {
+    max-width: 200px;
+  }
+
+
+  /* Make Timeline Fit Smaller Screens */
+  .timeline {
+    padding: 0 15px;
+    margin-left: 0px;
+
+  }
+    
+  .timeline::before {
+    left: 5px;
+  }
+
+  .timeline-event {
+    width: 100%;
+    left: -10px;
+    text-align: left;
+    padding: 15px;
+    margin-left: 0;
+  }
+
+  .timeline-event.right,
+  .timeline-event.left {
+    left: 0;
+  }
+
+  .timeline-event.right::after,
+  .timeline-event.left::after {
+    left: -20px;
+  }
+  
+
+  /* Fix Carousel Display */
+  .carousel-container {
+    height: 420px;
+    
+  }
+
+
+
+
+  .carousel-slide img {
+    width: 100%;
+  }
+  
+  .carousel-indicators {
+    margin-left: 35px;
+}
+
+/* Carousel Container */
+.carousel {
+margin-left: 20px;
+}
+
+
+/* Timeline Section Title */
+#timeline h2 {
+  margin-left: 30px;
+  
+}
+
+/* Timeline Section Title */
+#gallery h2 {
+  margin-left: 30px;
+  
+}
+
+  /* Adjust Footer */
+  footer {
+    width: calc(100% + 100px);
+    margin-left: -62px;
+  }
+
+  .footer-buttons {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
 }
