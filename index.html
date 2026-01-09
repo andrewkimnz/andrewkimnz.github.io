@@ -813,6 +813,10 @@ if (isDisplay) {
   let lastMetaSnapshot = null;
   let prevMoneyByTeam = {}; // display-only money increase detection
 
+  // Display-only: ensure the very first triggered event after a reload still shows.
+  // We persist the last event "at" we have already shown in sessionStorage.
+  let lastShownEventAt = Number(sessionStorage.getItem('kac_lastShownEventAt') || 0);
+
   /* ================= INIT DB ================= */
   Promise.all([
     teamsRef.once('value').then((s) => { if (!s.exists()) return teamsRef.set(DEFAULT_TEAMS); }),
@@ -858,10 +862,19 @@ if (isDisplay) {
     if (!meta) return;
 
     // Display reacts to new global market event
-    if (isDisplay && lastMetaSnapshot && meta.lastEvent?.name !== lastMetaSnapshot.lastEvent?.name) {
+    if (isDisplay) {
       const evName = meta.lastEvent?.name;
+      const evAt = Number(meta.lastEvent?.at || 0);
       const ev = marketEvents[evName];
-      if (ev) {
+
+      // Show when:
+      // - we have a valid event
+      // - it has a newer timestamp than what we've already shown this session
+      // This fixes the "first event after reload doesn't show" bug.
+      if (ev && evAt > 0 && evAt > lastShownEventAt) {
+        lastShownEventAt = evAt;
+        sessionStorage.setItem('kac_lastShownEventAt', String(evAt));
+
         showMarketOverlay(evName, ev);
         playEventSfx(evName, ev.type);
         setTimeout(() => { overlay.className = 'overlay'; overlay.innerHTML=''; }, 1900);
