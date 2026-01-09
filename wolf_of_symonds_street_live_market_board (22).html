@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kiwi Asian Club – Wolf of Symonds Street</title>
+
+  <!-- Firebase (Realtime DB, no backend needed) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      /* Light KAC palette */
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --card2: #f2f4f8;
+      --stroke: #e5e7eb;
+
+      --accent: #f5c400; /* KAC yellow */
+      --bank: #0b4f6c;   /* KAC navy tone */
+
+      --text: #111827;
+      --muted: #5f6c7b;
+
+      --good: #1f9d55;
+      --bad: #d64545;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .topbar {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--stroke);
+      background: #fff;
+    }
+
+    .brand { display:flex; flex-direction: column; gap: 4px; }
+
+    .kacTag {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.06em;
+    }
+
+    .sub {
+      font-size: 0.85rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .pillrow {
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      background: #fff;
+      border: 1px solid var(--stroke);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 800;
+      display:flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .pill b { color: var(--bank); }
+
+    button {
+      padding: 9px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0);
+      background: var(--accent);
+      font-weight: 900;
+      cursor: pointer;
+      margin: 4px;
+      color: #111;
+    }
+
+    button.market { background: #ffffff; color: var(--text); border: 1px solid var(--stroke); }
+    button.danger { background: #fff; color: var(--bad); border: 1px solid rgba(214,69,69,0.35); }
+    button.secondary { background: #fff; color: var(--text); border: 1px solid var(--stroke); }
+
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: #fff;
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: rgba(11,79,108,0.5);
+      box-shadow: 0 0 0 3px rgba(11,79,108,0.12);
+    }
+
+    .grid {
+      padding: 18px 22px 120px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 16px;
+      border: 1px solid var(--stroke);
+      box-shadow: 0 10px 30px rgba(17,24,39,0.05);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      color: rgba(17,24,39,0.78);
+      text-transform: uppercase;
+    }
+
+    /* Leaderboard */
+    .leader {
+      display: grid;
+      grid-template-columns: 44px 1fr 140px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 14px;
+      background: #f9fafb;
+      border: 1px solid var(--stroke);
+      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 300ms ease;
+    }
+
+    .rank {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(245,196,0,0.22);
+      border: 1px solid rgba(245,196,0,0.35);
+      font-weight: 1000;
+      color: #7a5f00;
+      font-size: 1.1rem;
+    }
+
+    .name { font-weight: 1000; font-size: 1.05rem; }
+
+    .meta {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display:flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .total {
+      text-align: right;
+      font-weight: 1000;
+      font-size: 1.2rem;
+      color: #7a5f00;
+    }
+
+    .bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(245,196,0,0.25), rgba(245,196,0,0.03));
+      pointer-events: none;
+      transition: width 450ms ease;
+    }
+
+    .pulseUp { animation: pulseUp 700ms ease; }
+    .pulseDown { animation: pulseDown 700ms ease; }
+
+    @keyframes pulseUp {
+      0% { box-shadow: 0 0 0 rgba(31,157,85,0); }
+      30% { box-shadow: 0 0 28px rgba(31,157,85,0.25); }
+      100% { box-shadow: 0 0 0 rgba(31,157,85,0); }
+    }
+
+    @keyframes pulseDown {
+      0% { box-shadow: 0 0 0 rgba(214,69,69,0); }
+      30% { box-shadow: 0 0 28px rgba(214,69,69,0.22); }
+      100% { box-shadow: 0 0 0 rgba(214,69,69,0); }
+    }
+
+    /* Teams control list */
+    .teamsWrap { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+
+    .teamCard {
+      background: var(--card2);
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid var(--stroke);
+    }
+
+    .teamCard h3 { margin: 0 0 8px; font-size: 1rem; }
+
+    .row {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .big {
+      font-size: 1.8rem;
+      font-weight: 1000;
+      color: #7a5f00;
+      line-height: 1.1;
+    }
+
+    .bankAmt {
+      font-size: 1.2rem;
+      font-weight: 900;
+      color: var(--bank);
+    }
+
+    .muted { color: var(--muted); font-size: 0.85rem; }
+
+    .btnGrid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+    .tiny { font-size: 0.8rem; padding: 8px 10px; border-radius: 10px; }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: min(5vw, 4rem);
+      font-weight: 1100;
+      letter-spacing: 0.08em;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 9999;
+      text-align: center;
+      padding: 22px;
+    }
+
+    /* Make splash BIGGER and more dramatic on DISPLAY */
+    .displayOnly .overlay {
+      font-size: min(9vw, 7rem);
+      background: rgba(255,255,255,0.97);
+    }
+
+    .overlay.show { opacity: 1; }
+    .overlay.good { color: var(--good); }
+    .overlay.bad { color: var(--bad); }
+
+    /* Overlay subtext */
+    .ovWrap { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .ovTitle { font-weight:1100; letter-spacing:0.08em; }
+    .ovSub { font-size:0.9em; font-weight:900; color:var(--muted); }
+
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(17,24,39,0.90);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 10px 14px;
+      border-radius: 12px;
+      opacity: 0;
+      transition: opacity 250ms ease;
+      z-index: 1000;
+      font-weight: 800;
+      color: rgba(255,255,255,0.95);
+      max-width: 92vw;
+    }
+
+    .toast.show { opacity: 1; }
+
+    /* Display-only layout */
+    .displayOnly .grid { grid-template-columns: 1fr; }
+    .displayOnly .controlsOnly { display:none !important; }
+
+    /* Admin-only */
+    .adminOnly { display:none; }
+    .isAdmin .adminOnly { display:block; }
+
+    .kpi {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .kpiBox {
+      background: #f9fafb;
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .kpiBox .label { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.08em; }
+    .kpiBox .value { font-size: 1.6rem; font-weight: 1100; color: #7a5f00; }
+
+    footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 14px;
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border-top: 1px solid var(--stroke);
+      font-size: 0.85rem;
+      color: var(--muted);
+      gap: 10px;
+    }
+
+    .footerRight { display:flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content:flex-end; }
+
+    .displayHint {
+      display:none;
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .displayOnly .displayHint { display:block; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="kacTag">Kiwi Asian Club presents</div>
+    <h1>THE WOLF OF SYMONDS STREET</h1>
+    <div class="sub" id="modeLabel">Loading…</div>
+    <div class="displayHint" id="displayHint">Display sound: click anywhere once to enable audio.</div>
+  </div>
+
+  <div class="pillrow">
+    <div class="pill"><span>Total Raised</span> <b id="raised">$0</b></div>
+    <div class="pill"><span>Rate</span> <b id="rate">1000 → $10</b></div>
+    <div class="pill"><span>Last Event</span> <b id="lastEvent">—</b></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <div class="kpi" style="margin-bottom: 12px">
+      <div class="kpiBox"><div class="label">TOTAL KACO KOINS (CASH + BANK)</div><div class="value" id="totalKoins">0</div></div>
+      <div class="kpiBox"><div class="label">AUTO EVENTS</div><div class="value" id="autoStatus">OFF</div></div>
+      <div class="kpiBox"><div class="label">NEXT EVENT IN</div><div class="value" id="nextIn">—</div></div>
+    </div>
+    <div id="leaderboard"></div>
+  </div>
+
+  <div class="card controlsOnly">
+    <h2>Market Control</h2>
+
+    <div class="adminOnly" id="adminPanel">
+      <div class="row">
+        <div>
+          <div class="muted">Donation rate (Kaco Koins → $)</div>
+          <div class="row" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+            <input id="kPer" type="number" min="1" value="1000" />
+            <input id="dPer" type="number" min="1" value="10" />
+          </div>
+          <button class="secondary" onclick="saveRate()">Save Rate</button>
+        </div>
+        <div>
+          <div class="muted">Auto market events</div>
+          <div class="row" style="grid-template-columns: 1fr; gap: 8px;">
+            <select id="autoMode">
+              <option value="random">Random from pool</option>
+              <option value="cycle">Cycle pool in order</option>
+            </select>
+            <input id="autoSeconds" type="number" min="10" value="120" />
+          </div>
+          <div class="btnGrid" style="margin-top: 6px;">
+            <button class="market" onclick="toggleAuto(true)">Start Auto</button>
+            <button class="market" onclick="toggleAuto(false)">Stop Auto</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px">
+        <div class="muted">Market events</div>
+        <div class="btnGrid">
+          <button onclick="triggerRandomEvent()">Random Event</button>
+          <button class="market" onclick="triggerEvent('INFLATION')">Inflation</button>
+          <button class="market" onclick="triggerEvent('MARKET BOOM')">Market Boom</button>
+          <button class="market" onclick="triggerEvent('MARKET CRASH')">Market Crash</button>
+          <button class="market" onclick="triggerEvent('INSIDER TIP')">Insider Tip</button>
+          <button class="danger" onclick="confirmReset()">RESET ALL</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 10px" class="row" id="soundRow">
+        <div>
+          <div class="muted">Sound effects (admin)</div>
+          <button class="market" id="soundBtn" onclick="toggleSound()">Sound: OFF</button>
+          <button class="secondary tiny" onclick="testSound()">Test Sound</button>
+          <div class="muted" style="margin-top:6px">Admin stays silent; display plays sounds. Use Test Sound to confirm audio works.</div>
+        </div>
+        <div>
+          <div class="muted">Tip</div>
+          <div class="muted">Use <b>?mode=display</b> for projector and <b>?mode=admin</b> on your phone.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="lockedPanel" class="muted">
+      Admin locked. Open with <b>?mode=admin</b> to control.
+    </div>
+  </div>
+</div>
+
+<div class="card controlsOnly adminOnly" style="margin: 0 22px 90px;" id="teamsControlWrap">
+  <h2>Team Controls</h2>
+  <div class="teamsWrap" id="teams"></div>
+</div>
+
+<div id="overlay" class="overlay"></div>
+<div id="toast" class="toast"></div>
+
+<footer>
+  <div><span id="conn">Connecting…</span></div>
+  <div class="footerRight"><span class="muted">Kiwi Asian Club · Wolf of Symonds Street · Live Market Board</span></div>
+</footer>
+
+<script>
+  /* ================= FIREBASE CONFIG ================= */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAU_2aocV55-cPLLYzXHET-U2UJU8XR_dc",
+    authDomain: "wolf-of-symonds-street.firebaseapp.com",
+    databaseURL: "https://wolf-of-symonds-street-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "wolf-of-symonds-street",
+    storageBucket: "wolf-of-symonds-street.firebasestorage.app",
+    messagingSenderId: "495706812316",
+    appId: "1:495706812316:web:295a4c734f223230d3a259"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const teamsRef = db.ref('teams');
+  const metaRef = db.ref('meta');
+
+  /* ================= MODES + ADMIN ================= */
+  const params = new URLSearchParams(location.search);
+  const MODE = (params.get('mode') || 'admin').toLowerCase();
+
+  // SIMPLE EVENT PIN (change this!)
+  const ADMIN_PIN = 'kac2026';
+
+  const isDisplay = MODE === 'display';
+  const isAdminMode = MODE === 'admin';
+
+  document.body.classList.toggle('displayOnly', isDisplay);
+
+  const modeLabel = document.getElementById('modeLabel');
+if (isDisplay) {
+  modeLabel.textContent = '';
+  const hint = document.getElementById('displayHint');
+  if (hint) hint.style.display = 'none';
+} else {
+  modeLabel.textContent = 'CONTROL MODE';
+}
+
+  function unlockAdmin() {
+    if (!isAdminMode) return false;
+    const pin = prompt('Enter admin PIN:');
+    if (pin === ADMIN_PIN) {
+      document.body.classList.add('isAdmin');
+      document.getElementById('lockedPanel').style.display = 'none';
+      refreshAdminPanels();
+      return true;
+    }
+    alert('Wrong PIN.');
+    return false;
+  }
+
+  if (isAdminMode) unlockAdmin();
+
+  /* ================= DEFAULT DATA ================= */
+  const DEFAULT_TEAMS = {
+    "0": { name: 'Team 1', cash: 0, bank: 0 },
+    "1": { name: 'Team 2', cash: 0, bank: 0 },
+    "2": { name: 'Team 3', cash: 0, bank: 0 },
+    "3": { name: 'Team 4', cash: 0, bank: 0 }
+  };
+
+  const DEFAULT_META = {
+    donation: { kPer: 1000, dPer: 10 },
+    auto: { enabled: false, seconds: 120, mode: 'random', nextAt: 0, cycleIndex: 0 },
+    lastEvent: { name: '—', at: 0 }
+  };
+
+  /* ================= UI ELEMENTS ================= */
+  const leaderboardEl = document.getElementById('leaderboard');
+  const teamsEl = document.getElementById('teams');
+  const overlay = document.getElementById('overlay');
+  const toast = document.getElementById('toast');
+
+  const raisedEl = document.getElementById('raised');
+  const rateEl = document.getElementById('rate');
+  const lastEventEl = document.getElementById('lastEvent');
+  const totalKoinsEl = document.getElementById('totalKoins');
+  const autoStatusEl = document.getElementById('autoStatus');
+  const nextInEl = document.getElementById('nextIn');
+  const connEl = document.getElementById('conn');
+
+  const kPerInput = document.getElementById('kPer');
+  const dPerInput = document.getElementById('dPer');
+  const autoModeSelect = document.getElementById('autoMode');
+  const autoSecondsInput = document.getElementById('autoSeconds');
+
+  // Show/hide admin panel depending on unlock
+  function refreshAdminPanels() {
+    const isAdmin = document.body.classList.contains('isAdmin');
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) adminPanel.style.display = isAdmin ? 'block' : 'none';
+  }
+  refreshAdminPanels();
+
+  /* ================= HELPERS ================= */
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1400);
+  }
+
+  function fmtMoney(n) {
+    return '$' + Math.round(n).toLocaleString();
+  }
+
+  function clampNonNeg(n) {
+    return Math.max(0, Math.floor(n));
+  }
+
+  function calcDonation(koins, donation) {
+    return (koins || 0) * (donation.dPer / donation.kPer);
+  }
+
+  function nowMs() { return Date.now(); }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  /* ================= SOUND FX =================
+     - Admin = silent controller
+     - Display = plays sounds when Firebase updates (market events + money increases)
+  */
+  if (isDisplay && localStorage.getItem('kac_sound') === null) {
+    localStorage.setItem('kac_sound', '1');
+  }
+
+  let soundEnabled = localStorage.getItem('kac_sound') === '1';
+  let audioUnlocked = false;
+  let audioCtx = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      audioCtx = new AC();
+    }
+    return audioCtx;
+  }
+
+  async function unlockAudio() {
+    const ctx = getAudioCtx();
+    if (!ctx) {
+      showToast('Audio not supported in this browser');
+      return false;
+    }
+    try {
+      if (ctx.state !== 'running') await ctx.resume();
+
+      // tiny silent tick to fully unlock on iOS
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      g.gain.value = 0;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.01);
+
+      audioUnlocked = (ctx.state === 'running');
+      return audioUnlocked;
+    } catch (e) {
+      console.warn('Audio unlock failed', e);
+      audioUnlocked = false;
+      return false;
+    }
+  }
+
+  function updateSoundUI() {
+    const btn = document.getElementById('soundBtn');
+    if (!btn) return;
+    btn.textContent = soundEnabled ? 'Sound: ON' : 'Sound: OFF';
+  }
+
+  async function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('kac_sound', soundEnabled ? '1' : '0');
+
+    if (soundEnabled) {
+      const ok = await unlockAudio();
+      updateSoundUI();
+      showToast(ok ? 'Sound enabled' : 'Sound blocked — try Test Sound');
+    } else {
+      updateSoundUI();
+      showToast('Sound muted');
+    }
+  }
+
+  function envGain(gainNode, t0, attack, decay, peak, sustain) {
+    const g = gainNode.gain;
+    g.cancelScheduledValues(t0);
+    g.setValueAtTime(0.0001, t0);
+    g.exponentialRampToValueAtTime(Math.max(0.0001, peak), t0 + attack);
+    g.exponentialRampToValueAtTime(Math.max(0.0001, sustain), t0 + attack + decay);
+  }
+
+  function playTone(freq, durMs, type, detuneCents = 0) {
+    if (!soundEnabled) return;
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
+
+    const t0 = ctx.currentTime;
+    const dur = Math.max(0.05, durMs / 1000);
+
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    const f = ctx.createBiquadFilter();
+
+    o.type = (type === 'bad') ? 'sawtooth' : 'triangle';
+    o.frequency.value = freq;
+    o.detune.value = detuneCents;
+
+    f.type = 'lowpass';
+    f.frequency.value = (type === 'bad') ? 900 : 1600;
+
+    o.connect(f);
+    f.connect(g);
+    g.connect(ctx.destination);
+
+    envGain(g, t0, 0.01, 0.08, 0.9, 0.22);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    o.start(t0);
+    o.stop(t0 + dur + 0.03);
+  }
+
+  function playSweep(fromHz, toHz, durMs, type) {
+    if (!soundEnabled) return;
+    const ctx = getAudioCtx();
+    if (!ctx || !audioUnlocked) return;
+
+    const t0 = ctx.currentTime;
+    const dur = Math.max(0.08, durMs / 1000);
+
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+
+    o.type = (type === 'bad') ? 'square' : 'sine';
+    o.frequency.setValueAtTime(fromHz, t0);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, toHz), t0 + dur);
+
+    o.connect(g);
+    g.connect(ctx.destination);
+
+    envGain(g, t0, 0.01, 0.10, 0.9, 0.18);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    o.start(t0);
+    o.stop(t0 + dur + 0.03);
+  }
+
+  // Market event sounds (DISPLAY ONLY)
+  function playEventSfx(name, type) {
+    if (!isDisplay) return;
+    switch (name) {
+      case 'MARKET BOOM':
+        playTone(440, 140, 'good');
+        playTone(660, 160, 'good', 6);
+        playTone(880, 220, 'good', -6);
+        break;
+      case 'INSIDER TIP':
+        playTone(740, 110, 'good');
+        playTone(988, 160, 'good');
+        break;
+      case 'MARKET CRASH':
+        playSweep(520, 110, 320, 'bad');
+        playTone(90, 220, 'bad');
+        break;
+      case 'INFLATION':
+        playSweep(180, 360, 260, 'bad');
+        playTone(210, 160, 'bad');
+        break;
+      default:
+        playTone(type === 'bad' ? 200 : 540, 180, type);
+    }
+  }
+
+  // Cash register ka-ching (DISPLAY ONLY)
+  function playCashSfx() {
+    if (!isDisplay) return;
+    playTone(1200, 80, 'good');
+    setTimeout(() => playTone(800, 120, 'good'), 70);
+    setTimeout(() => playTone(1400, 90, 'good'), 140);
+  }
+
+  async function testSound() {
+    soundEnabled = true;
+    localStorage.setItem('kac_sound', '1');
+
+    const ok = await unlockAudio();
+    updateSoundUI();
+
+    if (!ok) {
+      alert('Your browser is blocking audio.\n\nTry: click anywhere on the page once, then press Test Sound again.\nAlso check device volume + that the tab/site is not muted.');
+      return;
+    }
+
+    playTone(880, 240, 'good');
+    setTimeout(() => playTone(660, 260, 'good'), 140);
+    showToast('Test sound played');
+  }
+
+  // Unlock audio on first interaction (needed for display mode)
+  window.addEventListener('pointerdown', () => {
+    unlockAudio().then(() => {
+      if (audioUnlocked) showToast('Audio enabled');
+    });
+  }, { once: true });
+
+  updateSoundUI();
+
+  /* ================= MARKET EVENTS ================= */
+  const marketEvents = {
+    INFLATION: { type: 'bad', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) * 0.85) }) },
+    'MARKET BOOM': { type: 'good', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) * 1.25) }) },
+    'MARKET CRASH': { type: 'bad', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) * 0.60) }) },
+    'INSIDER TIP': { type: 'good', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) + 300) }) }
+  };
+
+  const MARKET_POOL = Object.keys(marketEvents);
+
+  function eventSubtext(name) {
+    switch (name) {
+      case 'MARKET BOOM': return 'Kaco Koins +25%';
+      case 'INFLATION': return 'Kaco Koins −15%';
+      case 'MARKET CRASH': return 'Kaco Koins −40%';
+      case 'INSIDER TIP': return '+300 Kaco Koins for all teams';
+      default: return '';
+    }
+  }
+
+  function showMarketOverlay(name, ev) {
+    const sub = eventSubtext(name);
+    overlay.innerHTML = `
+      <div class="ovWrap">
+        <div class="ovTitle">${escapeHtml(name)}</div>
+        ${sub ? `<div class="ovSub">${escapeHtml(sub)}</div>` : ''}
+      </div>`;
+    overlay.className = `overlay show ${ev?.type || ''}`;
+  }
+
+  /* ================= DATA STATE ================= */
+  let lastTeamsSnapshot = null;
+  let lastMetaSnapshot = null;
+  let prevMoneyByTeam = {}; // display-only money increase detection
+
+  /* ================= INIT DB ================= */
+  Promise.all([
+    teamsRef.once('value').then((s) => { if (!s.exists()) return teamsRef.set(DEFAULT_TEAMS); }),
+    metaRef.once('value').then((s) => { if (!s.exists()) return metaRef.set(DEFAULT_META); })
+  ]).catch((err) => console.error(err));
+
+  teamsRef.on('value', (snap) => {
+    connEl.textContent = 'Connected';
+    const teams = snap.val();
+    if (!teams) return;
+
+    // Display-side ka-ching: any increase in cash or bank for a team
+    if (isDisplay && lastTeamsSnapshot) {
+      for (const [k, t] of Object.entries(teams)) {
+        const cash = Number(t?.cash || 0);
+        const bank = Number(t?.bank || 0);
+
+        const prev = prevMoneyByTeam[k] || { cash: 0, bank: 0 };
+        const cashUp = cash > prev.cash;
+        const bankUp = bank > prev.bank;
+
+        if ((cashUp || bankUp) && (cash - prev.cash + bank - prev.bank) >= 50) {
+          playCashSfx();
+          break;
+        }
+      }
+    }
+
+    prevMoneyByTeam = Object.fromEntries(Object.entries(teams).map(([k, t]) => [k, {
+      cash: Number(t?.cash || 0),
+      bank: Number(t?.bank || 0)
+    }]));
+
+    lastTeamsSnapshot = teams;
+    renderAll();
+  }, (err) => {
+    connEl.textContent = 'Connection error';
+    console.error(err);
+  });
+
+  metaRef.on('value', (snap) => {
+    const meta = snap.val();
+    if (!meta) return;
+
+    // Display reacts to new global market event
+    if (isDisplay && lastMetaSnapshot && meta.lastEvent?.name !== lastMetaSnapshot.lastEvent?.name) {
+      const evName = meta.lastEvent?.name;
+      const ev = marketEvents[evName];
+      if (ev) {
+        showMarketOverlay(evName, ev);
+        playEventSfx(evName, ev.type);
+        setTimeout(() => { overlay.className = 'overlay'; overlay.innerHTML=''; }, 1900);
+      }
+    }
+
+    lastMetaSnapshot = meta;
+
+    // Sync UI inputs (admin)
+    if (kPerInput && dPerInput) {
+      kPerInput.value = meta.donation?.kPer ?? 1000;
+      dPerInput.value = meta.donation?.dPer ?? 10;
+    }
+    if (autoModeSelect) autoModeSelect.value = meta.auto?.mode ?? 'random';
+    if (autoSecondsInput) autoSecondsInput.value = meta.auto?.seconds ?? 120;
+
+    renderAll();
+  });
+
+  /* ================= RENDER ================= */
+  function renderAll() {
+    if (!lastTeamsSnapshot || !lastMetaSnapshot) return;
+
+    const teamsArr = Object.entries(lastTeamsSnapshot).map(([key, t]) => ({ key, ...t }));
+
+    const donation = lastMetaSnapshot.donation || { kPer: 1000, dPer: 10 };
+    const totalKoins = teamsArr.reduce((sum, t) => sum + (t.cash || 0) + (t.bank || 0), 0);
+    const totalRaised = calcDonation(totalKoins, donation);
+
+    totalKoinsEl.textContent = Math.round(totalKoins).toLocaleString();
+    raisedEl.textContent = fmtMoney(totalRaised);
+    rateEl.textContent = `${donation.kPer} → $${donation.dPer}`;
+
+    lastEventEl.textContent = lastMetaSnapshot.lastEvent?.name || '—';
+
+    const auto = lastMetaSnapshot.auto || { enabled: false };
+    autoStatusEl.textContent = auto.enabled ? 'ON' : 'OFF';
+
+    updateCountdown();
+    renderLeaderboard(teamsArr, donation);
+
+    if (document.body.classList.contains('isAdmin') && !isDisplay) {
+      renderTeamControls(teamsArr);
+    }
+  }
+
+  function renderLeaderboard(teamsArr, donation) {
+    const sorted = [...teamsArr].sort((a, b) => ((b.cash || 0) + (b.bank || 0)) - ((a.cash || 0) + (a.bank || 0)));
+    const maxTotal = Math.max(1, ...sorted.map((t) => (t.cash || 0) + (t.bank || 0)));
+
+    const prev = leaderboardEl.dataset.prev ? JSON.parse(leaderboardEl.dataset.prev) : {};
+    const nextPrev = {};
+
+    leaderboardEl.innerHTML = '';
+
+    sorted.forEach((t, idx) => {
+      const total = (t.cash || 0) + (t.bank || 0);
+      const cash = (t.cash || 0);
+      const bank = (t.bank || 0);
+      const donationDollars = calcDonation(total, donation);
+
+      nextPrev[t.key] = total;
+      const prevTotal = prev[t.key];
+      const delta = (typeof prevTotal === 'number') ? (total - prevTotal) : 0;
+
+      const row = document.createElement('div');
+      row.className = 'leader';
+
+      const pct = Math.max(0, Math.min(100, (total / maxTotal) * 100));
+
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.width = pct.toFixed(1) + '%';
+      row.appendChild(bar);
+
+      row.innerHTML += `
+        <div class="rank">${idx + 1}</div>
+        <div>
+          <div class="name">${escapeHtml(t.name || t.key)}</div>
+          <div class="meta">
+            <span>Cash: <b style="color:#7a5f00">${Math.round(cash).toLocaleString()}</b></span>
+            <span>Bank: <b style="color:var(--bank)">${Math.round(bank).toLocaleString()}</b></span>
+            <span>Donates: <b style="color:var(--good)">${fmtMoney(donationDollars)}</b></span>
+          </div>
+        </div>
+        <div class="total">${Math.round(total).toLocaleString()}</div>
+      `;
+
+      if (delta > 0) row.classList.add('pulseUp');
+      if (delta < 0) row.classList.add('pulseDown');
+
+      leaderboardEl.appendChild(row);
+    });
+
+    leaderboardEl.dataset.prev = JSON.stringify(nextPrev);
+  }
+
+  function renderTeamControls(teamsArr) {
+    teamsEl.innerHTML = '';
+
+    teamsArr.forEach((t) => {
+      const total = (t.cash || 0) + (t.bank || 0);
+
+      const el = document.createElement('div');
+      el.className = 'teamCard';
+      el.innerHTML = `
+        <h3>${escapeHtml(t.name || t.key)}</h3>
+        <div class="row" style="grid-template-columns: 1fr 90px; gap: 8px; margin-top: 8px;">
+          <input type="text" id="nameInput-${t.key}" placeholder="Team name" value="${escapeHtml(t.name || '')}" />
+          <button class="secondary tiny" onclick="updateTeamName('${t.key}')">Save</button>
+        </div>
+        <div class="muted">Total: <b style="color:#7a5f00">${Math.round(total).toLocaleString()}</b> Kaco Koins</div>
+
+        <div style="margin-top: 10px" class="row">
+          <div>
+            <div class="muted">CASH</div>
+            <div class="big">${Math.round(t.cash || 0).toLocaleString()}</div>
+          </div>
+          <div>
+            <div class="muted">BANK</div>
+            <div class="bankAmt">${Math.round(t.bank || 0).toLocaleString()}</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px">
+          <div>
+            <div class="muted">Quick cash</div>
+            <div class="btnGrid">
+              <button class="tiny" onclick="updateCash('${t.key}', 100)">+100</button>
+              <button class="tiny" onclick="updateCash('${t.key}', -100)">-100</button>
+              <button class="tiny" onclick="updateCash('${t.key}', 500)">+500</button>
+              <button class="tiny" onclick="updateCash('${t.key}', -500)">-500</button>
+            </div>
+            <div class="row" style="grid-template-columns: 1fr 90px; gap: 8px; margin-top: 8px;">
+              <input type="number" id="cashInput-${t.key}" placeholder="Manual ±" />
+              <button class="secondary tiny" onclick="manualCash('${t.key}')">Apply</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="muted">Quick bank</div>
+            <div class="btnGrid">
+              <button class="tiny" onclick="updateBank('${t.key}', 100)">+100</button>
+              <button class="tiny" onclick="updateBank('${t.key}', -100)">-100</button>
+              <button class="tiny" onclick="updateBank('${t.key}', 500)">+500</button>
+              <button class="tiny" onclick="updateBank('${t.key}', -500)">-500</button>
+            </div>
+            <div class="row" style="grid-template-columns: 1fr 90px; gap: 8px; margin-top: 8px;">
+              <input type="number" id="bankInput-${t.key}" placeholder="Manual ±" />
+              <button class="secondary tiny" onclick="manualBank('${t.key}')">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px">
+          <div class="muted">Apply event to this team (cash only)</div>
+          <div class="btnGrid">
+            <button class="market tiny" onclick="applyEventToTeam('${t.key}','INFLATION')">Inflation</button>
+            <button class="market tiny" onclick="applyEventToTeam('${t.key}','MARKET BOOM')">Boom</button>
+            <button class="market tiny" onclick="applyEventToTeam('${t.key}','MARKET CRASH')">Crash</button>
+            <button class="market tiny" onclick="applyEventToTeam('${t.key}','INSIDER TIP')">Insider</button>
+          </div>
+        </div>
+      `;
+
+      teamsEl.appendChild(el);
+    });
+  }
+
+  /* ================= MUTATIONS (FIREBASE) ================= */
+  function updateTeamName(key) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const input = document.getElementById(`nameInput-${key}`);
+    if (!input) return;
+
+    const raw = String(input.value || '').trim();
+    if (!raw) {
+      alert('Team name cannot be empty.');
+      return;
+    }
+    if (raw.length > 32) {
+      alert('Team name too long (max 32 chars).');
+      return;
+    }
+
+    teamsRef.child(key).transaction((team) => {
+      if (!team) return team;
+      return { ...team, name: raw };
+    });
+
+    showToast('Team name saved');
+  }
+
+  function updateCash(key, delta) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    teamsRef.child(key).transaction((team) => {
+      if (!team) return team;
+      return { ...team, cash: clampNonNeg((team.cash || 0) + delta) };
+    });
+  }
+
+  function updateBank(key, delta) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    teamsRef.child(key).transaction((team) => {
+      if (!team) return team;
+      return { ...team, bank: clampNonNeg((team.bank || 0) + delta) };
+    });
+  }
+
+  function manualCash(key) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const input = document.getElementById(`cashInput-${key}`);
+    if (!input) return;
+    const value = Number(input.value);
+    if (!isNaN(value) && value !== 0) {
+      updateCash(key, value);
+      showToast(`Cash ${value > 0 ? '+' : ''}${value} applied`);
+    }
+    input.value = '';
+  }
+
+  function manualBank(key) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const input = document.getElementById(`bankInput-${key}`);
+    if (!input) return;
+    const value = Number(input.value);
+    if (!isNaN(value) && value !== 0) {
+      updateBank(key, value);
+      showToast(`Bank ${value > 0 ? '+' : ''}${value} applied`);
+    }
+    input.value = '';
+  }
+
+  function applyEventToTeam(key, name) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const ev = marketEvents[name];
+    if (!ev) return;
+
+    showMarketOverlay(name, ev);
+
+    setTimeout(() => {
+      teamsRef.child(key).transaction((team) => {
+        if (!team) return team;
+        return ev.apply(team);
+      });
+      metaRef.child('lastEvent').set({ name, at: nowMs() });
+    }, 900);
+
+    setTimeout(() => { overlay.className = 'overlay'; overlay.innerHTML=''; }, 1900);
+  }
+
+  /* ================= MARKET (GLOBAL) ================= */
+  function triggerEvent(name) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const ev = marketEvents[name];
+    if (!ev) return;
+
+    showMarketOverlay(name, ev);
+
+    setTimeout(() => {
+      teamsRef.transaction((teams) => {
+        if (!teams || typeof teams !== 'object') return teams;
+        Object.keys(teams).forEach((k) => {
+          teams[k] = ev.apply(teams[k]);
+        });
+        return teams;
+      });
+      metaRef.child('lastEvent').set({ name, at: nowMs() });
+    }, 900);
+
+    setTimeout(() => { overlay.className = 'overlay'; overlay.innerHTML=''; }, 1900);
+  }
+
+  function triggerRandomEvent() {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const meta = lastMetaSnapshot || DEFAULT_META;
+    const auto = meta.auto || DEFAULT_META.auto;
+
+    let name;
+    if (auto.mode === 'cycle') {
+      name = MARKET_POOL[auto.cycleIndex % MARKET_POOL.length];
+      metaRef.child('auto/cycleIndex').set((auto.cycleIndex + 1) % MARKET_POOL.length);
+    } else {
+      name = MARKET_POOL[Math.floor(Math.random() * MARKET_POOL.length)];
+    }
+    triggerEvent(name);
+  }
+
+  /* ================= DONATION SETTINGS ================= */
+  function saveRate() {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const kPer = Number(kPerInput.value);
+    const dPer = Number(dPerInput.value);
+    if (!Number.isFinite(kPer) || !Number.isFinite(dPer) || kPer <= 0 || dPer <= 0) {
+      alert('Enter valid positive numbers.');
+      return;
+    }
+    metaRef.child('donation').set({ kPer, dPer });
+    showToast('Donation rate saved');
+  }
+
+  /* ================= AUTO EVENTS ================= */
+  function toggleAuto(enable) {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    const seconds = Number(autoSecondsInput.value);
+    const mode = autoModeSelect.value;
+    if (!Number.isFinite(seconds) || seconds < 10) {
+      alert('Auto seconds must be at least 10.');
+      return;
+    }
+
+    const nextAt = enable ? (nowMs() + seconds * 1000) : 0;
+    metaRef.child('auto').update({ enabled: enable, seconds, mode, nextAt });
+    showToast(enable ? 'Auto events ON' : 'Auto events OFF');
+  }
+
+  setInterval(() => {
+    updateCountdown();
+    maybeTriggerAuto();
+  }, 250);
+
+  function updateCountdown() {
+    const meta = lastMetaSnapshot || DEFAULT_META;
+    const auto = meta.auto || DEFAULT_META.auto;
+
+    if (!auto.enabled || !auto.nextAt) {
+      nextInEl.textContent = '—';
+      return;
+    }
+
+    const ms = auto.nextAt - nowMs();
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    nextInEl.textContent = s + 's';
+  }
+
+  function maybeTriggerAuto() {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    if (!lastMetaSnapshot) return;
+
+    const auto = lastMetaSnapshot.auto;
+    if (!auto || !auto.enabled || !auto.nextAt) return;
+
+    if (nowMs() >= auto.nextAt) {
+      const nextAt = nowMs() + (auto.seconds || 120) * 1000;
+      metaRef.child('auto/nextAt').set(nextAt);
+      triggerRandomEvent();
+    }
+  }
+
+  /* ================= RESET ================= */
+  function confirmReset() {
+    if (!document.body.classList.contains('isAdmin') || isDisplay) return;
+    if (!confirm('Reset ALL teams to 0 cash and 0 bank?')) return;
+    teamsRef.set(DEFAULT_TEAMS);
+    showToast('Reset complete');
+  }
+
+  /* ================= TESTS ================= */
+  console.assert(typeof DEFAULT_TEAMS === 'object' && DEFAULT_TEAMS !== null);
+  console.assert(!Array.isArray(DEFAULT_TEAMS));
+  console.assert(Object.keys(DEFAULT_TEAMS).length >= 1);
+  console.assert(typeof marketEvents === 'object' && Object.keys(marketEvents).length >= 2);
+  console.assert(typeof updateTeamName === 'function');
+  console.assert(typeof toggleSound === 'function');
+  console.assert(typeof testSound === 'function');
+  console.assert(typeof playCashSfx === 'function');
+  console.assert(typeof showMarketOverlay === 'function');
+
+  (function testDonationMath() {
+    const d = { kPer: 1000, dPer: 10 };
+    console.assert(calcDonation(0, d) === 0);
+    console.assert(calcDonation(1000, d) === 10);
+    console.assert(calcDonation(2500, d) === 25);
+  })();
+
+  (function testEventBankUnaffected() {
+    const t = { cash: 1000, bank: 500 };
+    const after = marketEvents['INFLATION'].apply(t);
+    console.assert(after.bank === 500);
+  })();
+
+  (function testEventSubtext() {
+    console.assert(eventSubtext('MARKET BOOM') === 'Kaco Koins +25%');
+    console.assert(eventSubtext('INFLATION') === 'Kaco Koins −15%');
+    console.assert(eventSubtext('MARKET CRASH') === 'Kaco Koins −40%');
+    console.assert(eventSubtext('INSIDER TIP').includes('+300'));
+  })();
+</script>
+
+</body>
+</html>
