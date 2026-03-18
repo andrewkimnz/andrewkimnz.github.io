@@ -521,7 +521,8 @@ if (isDisplay) {
     "0": { name: 'Team 1', cash: 0, bank: 0 },
     "1": { name: 'Team 2', cash: 0, bank: 0 },
     "2": { name: 'Team 3', cash: 0, bank: 0 },
-    "3": { name: 'Team 4', cash: 0, bank: 0 }
+    "3": { name: 'Team 4', cash: 0, bank: 0 },
+    "4": { name: 'Team 5', cash: 0, bank: 0 }
   };
 
   const DEFAULT_META = {
@@ -816,6 +817,8 @@ if (isDisplay) {
   // Display-only: ensure the very first triggered event after a reload still shows.
   // We persist the last event "at" we have already shown in sessionStorage.
   let lastShownEventAt = Number(sessionStorage.getItem('kac_lastShownEventAt') || 0);
+  // Display-only: prevent an existing (old) lastEvent from splashing on initial page load.
+  let displayMetaPrimed = false;
 
   /* ================= INIT DB ================= */
   Promise.all([
@@ -867,17 +870,23 @@ if (isDisplay) {
       const evAt = Number(meta.lastEvent?.at || 0);
       const ev = marketEvents[evName];
 
-      // Show when:
-      // - we have a valid event
-      // - it has a newer timestamp than what we've already shown this session
-      // This fixes the "first event after reload doesn't show" bug.
-      if (ev && evAt > 0 && evAt > lastShownEventAt) {
-        lastShownEventAt = evAt;
-        sessionStorage.setItem('kac_lastShownEventAt', String(evAt));
+      // Prime once: treat whatever is currently in DB as the baseline (NO splash).
+      if (!displayMetaPrimed) {
+        displayMetaPrimed = true;
+        if (evAt > 0) {
+          lastShownEventAt = Math.max(lastShownEventAt, evAt);
+          sessionStorage.setItem('kac_lastShownEventAt', String(lastShownEventAt));
+        }
+      } else {
+        // Splash only for events triggered AFTER the page is open.
+        if (ev && evAt > 0 && evAt > lastShownEventAt) {
+          lastShownEventAt = evAt;
+          sessionStorage.setItem('kac_lastShownEventAt', String(evAt));
 
-        showMarketOverlay(evName, ev);
-        playEventSfx(evName, ev.type);
-        setTimeout(() => { overlay.className = 'overlay'; overlay.innerHTML=''; }, 1900);
+          showMarketOverlay(evName, ev);
+          playEventSfx(evName, ev.type);
+          setTimeout(() => { overlay.className = 'overlay'; overlay.innerHTML=''; }, 1900);
+        }
       }
     }
 
@@ -1015,7 +1024,7 @@ if (isDisplay) {
           </div>
 
           <div>
-            <div class="muted">Quick bank</div>
+            <div class="muted">Quick bank (moves money between cash and bank)</div>
             <div class="btnGrid">
               <button class="tiny" onclick="updateBank('${t.key}', 100)">+100</button>
               <button class="tiny" onclick="updateBank('${t.key}', -100)">-100</button>
@@ -1080,7 +1089,31 @@ if (isDisplay) {
     if (!document.body.classList.contains('isAdmin') || isDisplay) return;
     teamsRef.child(key).transaction((team) => {
       if (!team) return team;
-      return { ...team, bank: clampNonNeg((team.bank || 0) + delta) };
+
+      const currentCash = Number(team.cash || 0);
+      const currentBank = Number(team.bank || 0);
+
+      // Positive banking moves money from cash -> bank.
+      // Negative banking withdraws money from bank -> cash.
+      if (delta > 0) {
+        const actualMove = Math.min(delta, currentCash);
+        return {
+          ...team,
+          cash: clampNonNeg(currentCash - actualMove),
+          bank: clampNonNeg(currentBank + actualMove)
+        };
+      }
+
+      if (delta < 0) {
+        const withdrawAmount = Math.min(Math.abs(delta), currentBank);
+        return {
+          ...team,
+          cash: clampNonNeg(currentCash + withdrawAmount),
+          bank: clampNonNeg(currentBank - withdrawAmount)
+        };
+      }
+
+      return team;
     });
   }
 
@@ -1103,7 +1136,11 @@ if (isDisplay) {
     const value = Number(input.value);
     if (!isNaN(value) && value !== 0) {
       updateBank(key, value);
-      showToast(`Bank ${value > 0 ? '+' : ''}${value} applied`);
+      showToast(
+        value > 0
+          ? `Moved ${value} from cash to bank`
+          : `Withdrew ${Math.abs(value)} from bank to cash`
+      );
     }
     input.value = '';
   }
@@ -1256,12 +1293,48 @@ if (isDisplay) {
     console.assert(after.bank === 500);
   })();
 
+  (function testBankTransferLogic() {
+    const team = { cash: 500, bank: 200 };
+
+    const deposit = (() => {
+      const currentCash = Number(team.cash || 0);
+      const currentBank = Number(team.bank || 0);
+      const actualMove = Math.min(300, currentCash);
+      return {
+        cash: clampNonNeg(currentCash - actualMove),
+        bank: clampNonNeg(currentBank + actualMove)
+      };
+    })();
+    console.assert(deposit.cash === 200);
+    console.assert(deposit.bank === 500);
+
+    const withdraw = (() => {
+      const currentCash = Number(team.cash || 0);
+      const currentBank = Number(team.bank || 0);
+      const withdrawAmount = Math.min(150, currentBank);
+      return {
+        cash: clampNonNeg(currentCash + withdrawAmount),
+        bank: clampNonNeg(currentBank - withdrawAmount)
+      };
+    })();
+    console.assert(withdraw.cash === 650);
+    console.assert(withdraw.bank === 50);
+  })();
+
   (function testEventSubtext() {
     console.assert(eventSubtext('MARKET BOOM') === 'Kaco Koins +25%');
     console.assert(eventSubtext('INFLATION') === 'Kaco Koins −15%');
     console.assert(eventSubtext('MARKET CRASH') === 'Kaco Koins −40%');
     console.assert(eventSubtext('INSIDER TIP').includes('+300'));
   })();
+
+  // Basic runtime error surfacing (helps when hosted)
+  window.addEventListener('error', (e) => {
+    try {
+      connEl.textContent = 'Script error (open console)';
+      console.error(e?.error || e);
+    } catch (_) {}
+  });
 </script>
 
 </body>
