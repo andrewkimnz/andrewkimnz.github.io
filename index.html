@@ -783,7 +783,7 @@ if (isDisplay) {
   const marketEvents = {
     INFLATION: { type: 'bad', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) * 0.85) }) },
     'MARKET BOOM': { type: 'good', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) * 1.25) }) },
-    'MARKET CRASH': { type: 'bad', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) * 0.60) }) },
+    'MARKET CRASH': { type: 'bad', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) * 0.80) }) },
     'INSIDER TIP': { type: 'good', apply: (t) => ({ ...t, cash: clampNonNeg((t.cash || 0) + 300) }) }
   };
 
@@ -793,7 +793,7 @@ if (isDisplay) {
     switch (name) {
       case 'MARKET BOOM': return 'Kaco Koins +25%';
       case 'INFLATION': return 'Kaco Koins −15%';
-      case 'MARKET CRASH': return 'Kaco Koins −40%';
+      case 'MARKET CRASH': return 'Kaco Koins −20%';
       case 'INSIDER TIP': return '+300 Kaco Koins for all teams';
       default: return '';
     }
@@ -911,7 +911,9 @@ if (isDisplay) {
 
     const donation = lastMetaSnapshot.donation || { kPer: 1000, dPer: 10 };
     const totalKoins = teamsArr.reduce((sum, t) => sum + (t.cash || 0) + (t.bank || 0), 0);
-    const totalRaised = calcDonation(totalKoins, donation);
+    const sortedByTotal = [...teamsArr].sort((a, b) => ((b.cash || 0) + (b.bank || 0)) - ((a.cash || 0) + (a.bank || 0)));
+    const topTeamTotal = sortedByTotal.length ? ((sortedByTotal[0].cash || 0) + (sortedByTotal[0].bank || 0)) : 0;
+    const totalRaised = calcDonation(topTeamTotal, donation);
 
     totalKoinsEl.textContent = Math.round(totalKoins).toLocaleString();
     raisedEl.textContent = fmtMoney(totalRaised);
@@ -1285,6 +1287,16 @@ if (isDisplay) {
     console.assert(calcDonation(0, d) === 0);
     console.assert(calcDonation(1000, d) === 10);
     console.assert(calcDonation(2500, d) === 25);
+
+    const teams = [
+      { cash: 500, bank: 200 },
+      { cash: 1000, bank: 300 },
+      { cash: 800, bank: 100 }
+    ];
+    const sorted = [...teams].sort((a, b) => ((b.cash || 0) + (b.bank || 0)) - ((a.cash || 0) + (a.bank || 0)));
+    const topTeamTotal = (sorted[0].cash || 0) + (sorted[0].bank || 0);
+    console.assert(topTeamTotal === 1300);
+    console.assert(calcDonation(topTeamTotal, d) === 13);
   })();
 
   (function testEventBankUnaffected() {
@@ -1324,7 +1336,7 @@ if (isDisplay) {
   (function testEventSubtext() {
     console.assert(eventSubtext('MARKET BOOM') === 'Kaco Koins +25%');
     console.assert(eventSubtext('INFLATION') === 'Kaco Koins −15%');
-    console.assert(eventSubtext('MARKET CRASH') === 'Kaco Koins −40%');
+    console.assert(eventSubtext('MARKET CRASH') === 'Kaco Koins −20%');
     console.assert(eventSubtext('INSIDER TIP').includes('+300'));
   })();
 
